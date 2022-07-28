@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DemoDay</title>
+    <script>
+        //Страна от которой выступают гонщики и занимают место в рейтинге
+        //Изначально место не известно
+        //position == место
+        class country {
+            constructor(from_country, racer, sum_stage_position_country = 0, stage_time_country = 0, stage_position = 0, position = 0, min_sum_personal_stage_time = 0) {
+                //Название страны
+                this.from_country = from_country;
+                //Место страны в итоговом протоколе:
+                this.position = Number(position)
+                //Массив гонщиков из одной страны:
+                this.racer = racer;
+                //Сумме мест, занятых страной на этапах:
+                this.sum_stage_position_country = sum_stage_position_country;
+                //Временя худшего (занявшего четвертое место) гонщика этой страны на крайнем этапе
+                this.stage_time_country = Number(stage_time_country);
+                //Место страны на этапе
+                this.stage_position = Number(stage_position)
+                //Лучшее время (в личном зачёте) лучшего гонщика страны
+                this.min_sum_personal_stage_time = Number(min_sum_personal_stage_time);
+            }
+        }
+        //Гонщик, у которого есть номер, фамилия, имя, рейтинг
+        //До проведения этапов рейтинг не известен
+        //Также добавил страну и время, за которое гонщик проходит круг
+        class racer {
+            constructor(number, country, surname, name, stage_position = 0, stage_time_racer = 0, sum_personal_stage_time = 0, position_sum_personal_stage_time = 0) {
+                //Номер гонщика:
+                this.number = Number(number);
+                //Страна гонщика:
+                this.country = country;
+                //Фамилия гонщика:
+                this.surname = surname;
+                //Имя гонщика:
+                this.name = name;
+                //Место (внутри страны) гонщика по оконачанию этапа:
+                this.stage_position = Number(stage_position);
+                //Время за которое гонщик прошел этап:
+                this.stage_time_racer = Number(stage_time_racer);
+                //Сумарное время, за которое гонщик прошел все этапы:
+                this.sum_personal_stage_time = Number(sum_personal_stage_time);
+                //Позиция гонщика в общем рейтинге по личному зачёту:
+                this.position_sum_personal_stage_time = Number(position_sum_personal_stage_time);
+            }
+        }
+
+
+        //Функция генерации случайного имени:
+        function random_name() {
+            let name_s = ['Aleksandr', 'Aleksey', 'Anatoly', 'Andrey', 'Anton', 'Arkady', 'Artem', 'Artur',
+                'Boris', 'Vadim', 'Valentin', 'Valeriy', 'Vasily', 'Viktor', 'Gennady', 'Gleb', 'Daniil', 'Denis',
+                'Yevgeny', 'Yegor', 'Zakhar', 'Ivan', 'Igor', 'Ilya', 'Iosif', 'Kirill', 'Konstantin', 'Leonid'];
+            return name_s[Math.floor(Math.random() * name_s.length)];
+        }
+        //Функция генерации случайной фамилии:
+        function random_supname() {
+            let surname_s = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Miller", "Davis", "Garcia", "Rodriguez",
+                "Wilson", "Martinez", "Anderson", "Taylor", "Thomas", "Hernandez", "Moore", "Martin", "Jackson", "Thompson",
+                "White", "Lopez", "Lee", "Gonzalez", "Harris", "Clark", "Lewis", "Robinson", "Walker", "Perez", "Hall", "Young",
+                "Allen", "Sanchez", "Wright", "King", "Scott", "Green", "Baker", "Adams", "Nelson", "Hill", "Ramirez", "Campbell",
+                "Mitchell", "Roberts", "Carter", "Phillips", "Evans", "Turner", "Torres", "Parker", "Collins", "Edwards", "Stewart",
+                "Flores", "Morris", "Nguyen", "Murphy", "Rivera", "Cook", "Rogers", "Morgan", "Peterson", "Cooper"];
+            return surname_s[Math.floor(Math.random() * surname_s.length)];
+        }
+        //Функция генерации случайной страны:
+        function random_country() {
+            return String(country_s.splice([Math.floor(Math.random() * country_s.length)], 1));
+        }
+
+        //Формирование участников
+        //Название и количество стран участников (здесь можно добавить или убрать страну):
+        let country_s = [['Россия'], ['Афганистан'], ['Иран'], ['Китай'], ['Азербайджан'], ['Индия'], ['Беларусь']];
+        //(не обязательно)Необходимо, чтобы вывести на страницу страны участников
+        let country_s_write = [JSON.parse(JSON.stringify(country_s))]
+
+        //Создаем основной массив объектов(страны участники):
+        let participating_countries = [];
+        //Все гонщики:
+        let all_racers = [];
+        //Присваеваем каждому гонщику порядковый номер:
+        let number_racer = 0;
+        for (let i = 0; country_s.length > 0; i++) {
+            //Гонщики от определенной страны:
+            let racer_country = []
+            //Добавляем страну в массив объектов стран участников:
+            participating_countries[i] = new country(random_country(), racer_country);
+            //по 4 гонщика из каждой страны
+            for (let j = 0; j < 4; j++) {
+                //Создаем массив объектов (гонщики) внутри каждой страны:
+                racer_country[j] = new racer(++number_racer, participating_countries[i].from_country,
+                    random_supname(), random_name());
+                //Создаем массив ссылок, чтобы выводить отдельно от стран всех гонщиков
+                //(Личный зачет) 
+                all_racers.push(racer_country[j]);
+            }
+        }
+
+        //Функция, которая проводит сами соревнования:
+        //participating_countries - массив стран участников
+        //number_of_stages - количество этапов на круге
+        //sorting_with_equal_points - метод сортировки если количетсво баллов равное
+        //number_of_participants - допустимое количество стран участников на круге
+        function Activate_circle(participating_countries, number_of_stages, 
+            sorting_with_equal_points, number_of_participants = participating_countries.length) {
+            
+            //Обнуляем прошлый рейтинг мест гонщиков:
+            for (let i = 0; i < all_racers.length; i++) {
+                all_racers[i].sum_personal_stage_time = 0
+            }
+            //Количество стран участников
+            participating_countries.length = number_of_participants;
+            //На каждом круге N этапов:
+            for (let i = 0; i < number_of_stages; i++) {
+                //Учавсвуют все страны:
+                for (let j = 0; j < participating_countries.length; j++) {
+                    //каждый гонщик проходит круг за определенное время в секундах:
+                    //Нам данные не известны, по этому берем через рандом:
+                    //participating_countries[j].racer.length == 4
+                    //Такая запись на тот случай, если необходимо будет изменить кол-во гонщиков в командах
+                    for (let k = 0; k < participating_countries[j].racer.length; k++) {
+                        //Время гонщика на этапе:
+                        participating_countries[j].racer[k].stage_time_racer = 
+                        Math.floor((Math.random() * (200 - 70) + 70));
+                        //Сумма времени на всех этапах в личном зачёте гонщика:
+                        participating_countries[j].racer[k].sum_personal_stage_time += 
+                                participating_countries[j].racer[k].stage_time_racer;
+                    }
+                }
+                //После заполнения времени сортируем гонщиков внутри страны по местам:
+                //Перебираем все страны:
+                for (let j = 0; j < participating_countries.length; j++) {
+                    //Перебираем всех гонщиков из страны:
+                    for (let k = 0; k < participating_countries[j].racer.length; k++) {
+                        //Сортируем
+                        for (let q = k + 1; q < participating_countries[j].racer.length; q++) {
+                            if (participating_countries[j].racer[k].stage_time_racer > 
+                                    participating_countries[j].racer[q].stage_time_racer) {
+                                let sort = participating_countries[j].racer[k];
+                                participating_countries[j].racer[k] = participating_countries[j].racer[q];
+                                participating_countries[j].racer[q] = sort;
+                            }
+                        }
+                        //После сортировки, присваеваем каждому гонщику место внутри страны:
+                        participating_countries[j].racer[k].stage_position = k + 1;
+                    }
+                    //Далее Определяем место страны на этапе по худшему результату гонщика:
+                    //Обращаемся ко времени гонщика на последнем месте:
+                    participating_countries[j].stage_time_country = 
+                            participating_countries[j].racer[participating_countries[j].racer.length - 1].stage_time_racer;
+                }
+                //После заполнения времени сортируем страны внутри этапа по местам:
+                for (let j = 0; j < participating_countries.length; j++) {
+                    for (let k = j + 1; k < participating_countries.length; k++) {
+                        if (participating_countries[j].stage_time_country > participating_countries[k].stage_time_country) {
+                            let sort = participating_countries[j];
+                            participating_countries[j] = participating_countries[k];
+                            participating_countries[k] = sort;
+                        }
+                    }
+                }
+                //Выдаём каждой стране место на этапе:
+                for (let j = 0; j < participating_countries.length; j++) {
+                    participating_countries[j].stage_position = j + 1;
+                    //Сумма мест для итогового протокола:
+                    participating_countries[j].sum_stage_position_country += participating_countries[j].stage_position;
+                }
+
+            }
+            //Все этапы прошли, теперь нужна сортировка по местам в итоговой таблице:
+            //Определяем лучшее время в личном зачете гонщика у каждой страны:
+            for (let j = 0; j < participating_countries.length; j++) {
+                participating_countries[j].min_sum_personal_stage_time = Math.min(
+                    participating_countries[j].racer[0].sum_personal_stage_time,
+                    participating_countries[j].racer[1].sum_personal_stage_time,
+                    participating_countries[j].racer[2].sum_personal_stage_time,
+                    participating_countries[j].racer[3].sum_personal_stage_time
+                )
+            }
+            //Сортировка по местам в итоговой таблице:
+            for (let j = 0; j < participating_countries.length; j++) {
+                for (let k = j + 1; k < participating_countries.length; k++) {
+                    //Место страны в итоговом протоколе первого круга определяется по наименьшей сумме мест, 
+                    //занятых страной на этапах
+                    if (participating_countries[j].sum_stage_position_country > 
+                            participating_countries[k].sum_stage_position_country) {
+                        let sort = participating_countries[j];
+                        participating_countries[j] = participating_countries[k];
+                        participating_countries[k] = sort;
+                        //а при равенстве этого показателя -
+                    } else if (participating_countries[j].sum_stage_position_country == 
+                                    participating_countries[k].sum_stage_position_country) {
+                        //- по заданному пользователем методу
+                        if (sorting_with_equal_points(j, k)) {
+                            let sort = participating_countries[j];
+                            participating_countries[j] = participating_countries[k];
+                            participating_countries[k] = sort;
+                        }
+                    }
+                }
+                participating_countries[j].position = j + 1;
+            }
+            //Сортируем всех гонщиков (личный зачёт):
+            for (let i = 0; i < all_racers.length; i++) {
+                for (let j = i + 1; j < all_racers.length; j++) {
+                    if (all_racers[i].sum_personal_stage_time > all_racers[j].sum_personal_stage_time) {
+                        let sort = all_racers[i];
+                        all_racers[i] = all_racers[j];
+                        all_racers[j] = sort;
+                    }
+                }
+                all_racers[i].position_sum_personal_stage_time = i + 1;
+            }
+            //JSON.parse(JSON.stringify) - возвращает новый массив, копируя указанный. (Не ссылка)
+            return first_stage = [JSON.parse(JSON.stringify(participating_countries)), JSON.parse(JSON.stringify(all_racers))];
+        }
+
+        //Функия задается пользователем.
+        function Min_sum_personal_stage_time(country_index_1, country_index_2) {
+            return Boolean(Math.min(participating_countries[country_index_1].racer[0].sum_personal_stage_time,
+                participating_countries[country_index_1].racer[1].sum_personal_stage_time,
+                participating_countries[country_index_1].racer[2].sum_personal_stage_time,
+                participating_countries[country_index_1].racer[3].sum_personal_stage_time) > 
+                    Math.min(participating_countries[country_index_2].racer[0].sum_personal_stage_time,
+                    participating_countries[country_index_2].racer[1].sum_personal_stage_time,
+                    participating_countries[country_index_2].racer[2].sum_personal_stage_time,
+                    participating_countries[country_index_2].racer[3].sum_personal_stage_time))
+        }
+        //Функия задается пользователем.
+        function arithmetic_mean_sum_personal_stage_time(country_index_1, country_index_2) {
+            return Boolean(((participating_countries[country_index_1].racer[0].sum_personal_stage_time +
+                participating_countries[country_index_1].racer[1].sum_personal_stage_time +
+                participating_countries[country_index_1].racer[2].sum_personal_stage_time +
+                participating_countries[country_index_1].racer[3].sum_personal_stage_time) / 4) > (
+                    (participating_countries[country_index_2].racer[0].sum_personal_stage_time +
+                        participating_countries[country_index_2].racer[1].sum_personal_stage_time +
+                        participating_countries[country_index_2].racer[2].sum_personal_stage_time +
+                        participating_countries[country_index_2].racer[3].sum_personal_stage_time) / 4))
+        }
+
+/*-------------------------------------------------------------------------------------------------------------------*/
+        //Всё что достаточно написать пользователю:
+        /* console.log(`Первый круг:`);
+         let first_round = Activate_circle(participating_countries, 5, Min_sum_personal_stage_time);
+         console.log(first_round);
+         console.log(`Второй круг:`);
+         let second_round = Activate_circle(participating_countries, 2, arithmetic_mean_sum_personal_stage_time, 4);
+         console.log(second_round);*/
+/*-------------------------------------------------------------------------------------------------------------------*/
+
+        //Вывод ответа:
+        //Страны участники 
+        let all_countries = '<table border="1" cellpadding="3">';
+        all_countries += `Страны участники:`;
+        for (let i = 0; i < country_s_write[0].length; i++) {
+            all_countries += '<tr>';
+            all_countries += '<td>' + country_s_write[0][i] + '</td>';
+            all_countries += '</tr>';
+        }
+        all_countries += '</table>'
+        //вывод стран участников
+        function countries() {
+            countries_.innerHTML = all_countries;
+            document.getElementById('button_1').style.display = 'block';
+            document.getElementById('button_0').style.display = 'none';
+            document.getElementById('reboot').style.display = 'block';
+            document.getElementById('text').style.display = 'block';
+            let headingElement = document.querySelector('#task_01');
+            headingElement.style.top = '400px';
+            let rebootElement = document.querySelector('#reboot');
+            rebootElement.style.top = '115px';
+
+        }
+        
+        //Запись вводных данных
+        //Вывод итоговых таблиц по первому кругу
+        function Results_1() {
+            console.log(`Первый круг:`);
+            let first_round = Activate_circle(participating_countries, 
+                document.getElementById("number_of_stages").value, Min_sum_personal_stage_time);
+            if (document.getElementById("number_of_stages").value == ''){
+                alert('Интересно! Первый круг завершился без единого этапа!')
+            } else if (document.getElementById("number_of_stages").value <= 0){
+                alert('Ошибка! Ввели некорректное значение. Вводить можно только \
+положительные числа. Этапы на первом круге отменются')
+            } else if (document.getElementById("number_of_stages").value.indexOf('.') != -1){
+                alert('Ошибка! Ввели некорректное значение. Вводить можно только целые \
+положительные числа. Количество этапов на первом круге округляется')
+            }
+            console.log(first_round);
+            let first_round_countries = '<table border="1" cellpadding="3">';
+            first_round_countries += `Итоги первого круга:`;
+            first_round_countries += `<td>` + `Место:` + `</td>`;
+            first_round_countries += '<td> Название страны </td>';
+            for (let i = 0; i < first_round[0].length; i++) {
+                first_round_countries += '<tr>';
+                first_round_countries += '<td>' + first_round[0][i].position + '</td>';
+                first_round_countries += '<td>' + first_round[0][i].from_country + '</td>';
+                first_round_countries += '</tr>';
+            }
+            first_round_countries += '</table>'
+
+            //Вывод мест гонщиков в личном зачете после первого круга:
+            let first_round_racers = '<table border="1" cellpadding="3">';
+            first_round_racers += `Итоги личного зачета гонщиков после первого круга:`;
+            first_round_racers += `<td>` + `Место:` + `</td>`;
+            first_round_racers += `<td>` + `Номер:` + `</td>`;
+            first_round_racers += '<td> Страна </td>';
+            first_round_racers += '<td> Фамилия и имя гонщика </td>';
+            first_round_racers += '<td> Общее время гонщика  </td>';
+            for (let i = 0; i < first_round[1].length; i++) {
+                first_round_racers += '<tr>';
+                first_round_racers += '<td>' + first_round[1][i].position_sum_personal_stage_time + '</td>';
+                first_round_racers += '<td>' + first_round[1][i].number + '</td>';
+                first_round_racers += '<td>' + first_round[1][i].country + '</td>';
+                first_round_racers += '<td>' + first_round[1][i].surname + ' ' + first_round[1][i].name + '</td>';
+                first_round_racers += '<td>' + first_round[1][i].sum_personal_stage_time + '</td>';
+                first_round_racers += '</tr>';
+            }
+            first_round_racers += '</table>';
+
+            results_01_.innerHTML = first_round_countries;
+            results_02_.innerHTML = first_round_racers;
+            document.getElementById('button_2').style.display = 'block'
+            document.getElementById('button_1').style.display = 'none'
+            document.getElementById('text').style.display = 'none';
+        }
+
+        //Вывод итоговых таблиц по второму кругу:
+        function Results_2() {
+            console.log(`Второй круг:`);
+            let second_round = Activate_circle(participating_countries, 2, arithmetic_mean_sum_personal_stage_time, 4);
+            console.log(second_round);
+            console.log('Страна победитель:')
+            console.log(second_round[0][0].from_country);
+            second_round[1].splice(0, 12)
+            //Вывод мест по второму кругу:
+            let second_round_countries = '<table border="1" cellpadding="3">';
+            second_round_countries += `Итоги второго круга:`;
+            second_round_countries += `<td>` + `Место:` + `</td>`;
+            second_round_countries += '<td> Название страны </td>';
+            for (let i = 0; i < second_round[0].length; i++) {
+                second_round_countries += '<tr>';
+                second_round_countries += '<td>' + second_round[0][i].position + '</td>';
+                second_round_countries += '<td>' + second_round[0][i].from_country + '</td>';
+                second_round_countries += '</tr>';
+            }
+            second_round_countries += '</table>'
+
+            //Вывод мест гонщиков в личном зачете после второго круга:
+            let second_round_racers = '<table border="1" cellpadding="3">';
+            second_round_racers += `Итоги личного зачета гонщиков после второго круга:`;
+            second_round_racers += `<td>` + `Место:` + `</td>`;
+            second_round_racers += `<td>` + `Номер:` + `</td>`;
+            second_round_racers += '<td> Страна </td>';
+            second_round_racers += '<td> Фамилия и имя гонщика </td>';
+            second_round_racers += '<td> Общее время гонщика  </td>';
+            let num_position = 0;
+            for (let i = 0; i < second_round[1].length; i++) {
+                if (second_round[1][i].sum_personal_stage_time == 0) {
+                    continue;
+                } else {
+                    second_round_racers += '<tr>';
+                    second_round_racers += '<td>' + ++num_position + '</td>';
+                    second_round_racers += '<td>' + second_round[1][i].number + '</td>';
+                    second_round_racers += '<td>' + second_round[1][i].country + '</td>';
+                    second_round_racers += '<td>' + second_round[1][i].surname + ' ' + second_round[1][i].name + '</td>';
+                    second_round_racers += '<td>' + second_round[1][i].sum_personal_stage_time + '</td>';
+                    second_round_racers += '</tr>';
+                }
+            }
+            results_2.innerHTML = second_round_countries;
+            win_country.innerHTML = 'Страна-победитель соревнований:' + second_round[0][0].from_country
+            results_2_racers.innerHTML = second_round_racers;
+            document.getElementById('button_2').style.display = 'none'
+        }
+
+        //Обновить страницу:
+        function location_reload() {
+            location.reload();
+        } 
+    </script>
+    <style>
+        #countries_ {
+            position: absolute;
+            width: 175px;
+            height: 20px;
+            top: 150px;
+            left: 180px; 
+            color: aliceblue;
+        }
+
+        #button_1 {
+            position: absolute;
+            width: 175px;
+            height: 20px;
+            top: 250px;
+            left: 325px;
+            color: aliceblue;
+            background: green;
+            border-color: green;
+        }
+
+        #results_01_ {
+            position: absolute;
+            width: 175px;
+            height: 20px;
+            top: 120px;
+            left: 515px;
+            color: aliceblue;
+        }
+
+        #results_02_ {
+            position: absolute;
+            width: 175px;
+            height: 20px;
+            top: 420px;
+            left: 430px;
+            color: aliceblue;
+        }
+
+        #button_2 {
+            position: absolute;
+            width: 175px;
+            height: 20px;
+            top: 250px;
+            left: 710px;
+            color: aliceblue;
+            background: green;
+            border-color: green;
+        }
+
+        #results_2 {
+            position: absolute;
+            width: 175px;
+            height: 20px;
+            top: 150px;
+            left: 905px;
+            color: aliceblue;
+        }
+
+        #results_2_racers {
+            position: absolute;
+            width: 175px;
+            height: 20px;
+            top: 420px;
+            left: 830px;
+            color: aliceblue;
+        }
+
+        #win_country {
+            position: absolute;
+            width: 175px;
+            height: 20px;
+            top: 235px;
+            left: 1225px;
+            color: aliceblue;
+        }
+
+        #task_01 {
+            position: absolute;
+            width: 400px;
+            height: 500px;
+            top: 200px;
+            left: 10px;
+            color: aliceblue;
+        }
+
+        #reboot {
+            position: absolute;
+            width: 175px;
+            height: 20px;
+            top: 1px;
+            left: 9px;
+            color: aliceblue;
+            border-color: green;
+            background: green
+        }
+        #h3 {
+            color: black
+        }
+        #text {
+            position: absolute;
+            width: 175px;
+            height: 20px;
+            top: 170px;
+            left: 325px;
+            color: aliceblue;
+        }
+        html {
+            background-image: url(https://i.postimg.cc/pXBmMx5d/1080-607.png);
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-attachment: fixed;
+            -webkit-background-size: cover;
+            -moz-background-size: cover;
+            -o-background-size: cover;
+            background-size: cover;
+            }
+    </style>
+           
+</head>
+<body>
+     <div id="html"></div>
+    <h1 align='center'>
+        Demo Day
+    </h1>
+    <div>
+        <h3> Реализация: </h3>
+        <div>
+            <button type="button" onclick="countries()" id="button_0" style="display:block;">Показать 
+                участников</button><br>
+            <div id="countries_"></div>
+        </div>
+        <div>
+
+        </div>
+       <div id="text" style="display:none;">
+            <p>Введите количество этапов:
+            <input type="number" id="number_of_stages"> </p>
+        </div> 
+        <div>
+            <button type="button" onclick="Results_1()" style="display:none;" id="button_1">Провести первый
+                круг</button><br>
+            <div id="results_01_"></div>
+        </div>
+
+        <div>
+            <div id="results_02_"></div>
+        </div>
+
+        <div>
+            <button type="button" onclick="Results_2()" style="display:none;" id="button_2">Провести второй
+                круг</button><br>
+            <div id="results_2"></div>
+            <div id="results_2_racers"></div>
+            <div id="win_country"></div>
+        </div>
+            
+        <div align="justify" id="task_01">
+            <h3 id="h3"> Задание: </h3>
+            В соревновании по велоспорту участвуют по 4 гонщика из каждой страны.
+            О каждом гонщике известны следующие данные: номер, фамилия, имя, рейтинг.
+
+            Соревнование проходит в два круга.
+
+            Первый круг состоит из N этапов.
+            Место страны на этапе определяется по времени худшего (занявшего четвертое место)
+            гонщика этой страны на рассматриваемом этапе.
+
+            Место страны в итоговом протоколе
+            первого круга определяется по наименьшей сумме мест, занятых страной на этапах,
+            а при равенстве этого показателя – по более высокому месту в итоговом протоколе
+            (в личном зачёте) лучших гонщиков конкурирующих стран.
+
+            Во второй круг проходит 4 страны имеющие лучший результат.
+            Второй круг проходит в два этапа. Место страны на этапе
+            определяется по времени лучшего (занявшего первое место) гонщика этой страны на
+            рассматриваемом этапе. Место страны в итоговом протоколе второго круга определяется
+            по наименьшей сумме мест, занятых страной на этапах, а при равенстве этого показателя –
+            по средне арифметическому значению рейтинга всех гонщиков страны.
+
+            Примечание: После проведения первого круга соревнований, должен быть выведен итоговый
+            протокол по гонщикам и по странам. Для проведения второго круга требуется подтверждение
+            пользователя. Затем выводится итоговый протокол по второму кругу и отдельно сообщение о
+            стране-победителе соревнований.
+        </div>
+        <div>
+            <button type="button" onClick="location_reload()" style="display:none;" id='reboot'>
+                Попробовать ещё раз</button>
+        </div>
+        
+</body>
+</html>
